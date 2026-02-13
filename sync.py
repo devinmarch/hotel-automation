@@ -1,7 +1,7 @@
 import os
 import json
 import requests
-from db import Reservations
+from db import Reservations, Assignments
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
 
@@ -15,9 +15,20 @@ check_in_to = (datetime.now() + timedelta(days=days_ahead)).strftime('%Y-%m-%d')
 
 room_type_id = '537928'
 
+inactive_statuses = ['checked_out', 'canceled', 'no_show', 'not_confirmed']
+
+
+def _json_or_text(response):
+    try:
+        return response.json()
+    except ValueError:
+        print(f'Bad response {response.text}')
+        return None
+    
+
 def sync():
     
-    reservations = requests.get(
+    response = requests.get(
         f'https://api.cloudbeds.com/api/v1.3/getReservations',
         headers={'Authorization': f'Bearer {os.environ["CLOUDBEDS_API_KEY"]}'},
         params={
@@ -27,80 +38,82 @@ def sync():
             'roomTypeID': f'{room_type_id}'
 
         }
-    ).json()
+    )
 
-    returned_ids = [r['reservationID'] for r in reservations['data']]
+    reservations = _json_or_text(response)
+    reservation_ids_comma = ','.join(str(r['reservationID']) for r in reservations['data'])
 
-    for r in reservations['data']:
-        res, created = Reservations.get_or_create(
-            reservation_id=r['reservationID'],
-            defaults={
-                'date_modified': r['dateModified'],
-                'status': r['status'],
-                'guest_name': r['guestName'],
-                'start_date': r['startDate'],
-                'end_date': r['endDate'],
-                'balance': r['balance'],
-            }
-        )
-
-        if not created:
-            Reservations.update(
-            date_modified=r['dateModified'],
-            status=r['status'],
-            guest_name=r['guestName'],
-            start_date=r['startDate'],
-            end_date=r['endDate'],
-            balance=r['balance'],
-        ).where(Reservations.reservation_id == r['reservationID']).execute()
-    
-    Reservations.delete().where(Reservations.reservation_id.not_in(returned_ids)).execute()
-
-
-    assignments = requests.get(
-        'https://api.cloudbeds.com/api/v1.3/getReservationsWithRateDetails',
+    response = requests.get(
+        f'https://api.cloudbeds.com/api/v1.3/getReservationsWithRateDetails',
         headers={'Authorization': f'Bearer {os.environ["CLOUDBEDS_API_KEY"]}'},
         params={
-            'propertyID': os.environ['CLOUDBEDS_PROPERTY_ID'],
-            'reservationID': ','.join(returned_ids),
+            'propertyID': f'{os.environ["CLOUDBEDS_PROPERTY_ID"]}',
+            'reservationID': f'{reservation_ids_comma}'
         }
-    ).json()
+    )
 
-    all_room_keys = []
+    reservations_detailed = _json_or_text(response)
+    reservation_ids = [str(r['reservationID']) for r in reservations_detailed['data']]
 
-    for reservation in assignments['data']:
-        res_id = str(reservation['reservationID'])
-        for room in reservation['rooms']:
-            room_id = room['roomID'] or ''
-            all_room_keys.append(room_id)
+    reservations = [
+        {
+            'reservation_id': res['reservationID'],
+            'date_modified': res['dateModified'],
+            'status': res['status'],
+            'guest_name': res['guestName'],
+            'start_date': res['reservationCheckIn'],
+            'end_date': res['reservationCheckOut'],
+            'balance': res['balance'],
+        }
+        for res in reservations_detailed['data']
+    ]
 
-            assignment, created = Assignments.get_or_create(
-                reservation_id=res_id,
-                room_id=room_id,
-                defaults={
-                    'room_type_name': room['roomTypeName'],
-                    'guest_name': room['guestName'],
-                    'room_check_in': room['roomCheckIn'],
-                    'room_check_out': room['roomCheckOut'],
-                    'room_status': room['roomStatus'],
-                }
-             )
-            
-            if not created:
-                Assignments.update(
-                    room_type_name=room['roomTypeName'],
-                    guest_name=room['guestName'],
-                    room_check_in=room['roomCheckIn'],
-                    room_check_out=room['roomCheckOut'],
-                    room_status=room['roomStatus'],
-            ).where(
-                (Assignments.reservation_id == str(res_id)) &
-                (Assignments.room_id == room_id)
-            ).execute()
-    
-    Assignments.delete().where(
-        Assignments.reservation_id.not_in(returned_ids)
+    print(f'Found {len(reservations)} reservations')
+
+    room_assignments = [
+        {
+            'reservation': res['reservationID'],
+            'room_id': room['roomID'],
+            'room_status': room['roomStatus'],
+            'room_check_in': room['roomCheckIn'],
+            'room_check_out': room['roomCheckOut'],
+        }
+        for res in reservations_detailed['data']
+        if res['status'] not in inactive_statuses
+        for room in res['rooms']
+    ]
+
+    print(f'Found {len(room_assignments)} assignments')
+
+    Reservations.insert_many(reservations).on_conflict(
+        conflict_target=[Reservations.reservation_id],
+        preserve=[Reservations.date_modified,
+                  Reservations.status,
+                  Reservations.guest_name,
+                  Reservations.start_date,
+                  Reservations.end_date,
+                  Reservations.balance]
     ).execute()
+
+    deleted_reservations = Reservations.delete().where(
+        Reservations.reservation_id.not_in(reservation_ids)
+    ).execute()
+
+    print(f'Deleted {deleted_reservations} record/s')
+
+    Assignments.insert_many(room_assignments).on_conflict(
+        conflict_target=[Assignments.reservation, Assignments.room_id],
+        preserve=[Assignments.room_status,
+                  Assignments.room_check_in,
+                  Assignments.room_check_out]
+    ).execute()
+
+    Assignments.delete().where(
+        Assignments.reservation.in_(
+            Reservations.select().where(Reservations.status.in_(inactive_statuses))
+        )
+    ).execute()
+
 
 if __name__ == '__main__':
     sync()

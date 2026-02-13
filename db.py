@@ -1,6 +1,8 @@
-from peewee import SqliteDatabase, Model, CharField
+from peewee import SqliteDatabase, Model, CharField, ForeignKeyField, CompositeKey
 
 db = SqliteDatabase('ha.db')
+
+db.pragma('foreign_keys', 1, permanent=True)
 
 class BaseModel(Model):
     class Meta:
@@ -15,5 +17,15 @@ class Reservations(BaseModel):
     end_date = CharField()
     balance = CharField()
 
-db.connect()
-db.create_tables([Reservations])
+class Assignments(BaseModel):
+    reservation = ForeignKeyField(Reservations, backref='assignments', on_delete='CASCADE')
+    room_id = CharField()
+    room_status = CharField()
+    room_check_in = CharField()
+    room_check_out = CharField()
+
+    class Meta:
+        primary_key = CompositeKey('reservation', 'room_id')
+
+db.connect(reuse_if_open=True)
+db.create_tables([Reservations, Assignments])
