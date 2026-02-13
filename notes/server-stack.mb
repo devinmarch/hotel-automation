@@ -1,0 +1,7 @@
+hetzner server with firewalled port 22 (accessed via tailscale)
+cloudflare for dns and tunnel
+caddy for reverse proxy
+systemd as the service manager
+flask app dev server (gunicorn later)
+sqlite database
+python/venv for the runtime

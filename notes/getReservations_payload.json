@@ -1,0 +1,33 @@
+
+
+{
+  "success": true,
+  "data": [
+    {
+      "propertyID": "260351",
+      "reservationID": "1681706192837",
+      "dateCreated": "2026-02-12 18:38:14",
+      "dateModified": "2026-02-12 18:43:33",
+      "status": "confirmed",
+      "guestID": "166023218",
+      "profileID": "189244282572992",
+      "guestName": "Devin March",
+      "startDate": "2026-02-17",
+      "endDate": "2026-02-18",
+      "adults": "1",
+      "children": "0",
+      "balance": 224.25,
+      "sourceID": "s-2",
+      "sourceName": "Walk-In",
+      "thirdPartyIdentifier": null,
+      "allotmentBlockCode": null,
+      "groupCode": null,
+      "origin": ""
+    }
+  ],
+  "count": 1,
+  "total": 1
+}
+
+
+

@@ -1,0 +1,78 @@
+
+
+{
+  "success": true,
+  "data": [
+    {
+      "reservationID": "1681706192837",
+      "isDeleted": false,
+      "dateCreated": "2026-02-12 18:38:14",
+      "dateCreatedUTC": "2026-02-12 22:08:14",
+      "dateModified": "2026-02-12 22:13:19",
+      "dateModifiedUTC": "2026-02-13 01:43:19",
+      "dateCancelled": "2026-02-12 22:13:13",
+      "dateCancelledUTC": "2026-02-13 01:43:13",
+      "status": "canceled",
+      "reservationCheckIn": "2026-02-17",
+      "reservationCheckOut": "2026-02-18",
+      "guestID": "166023218",
+      "profileID": "189244282572992",
+      "guestName": "Devin March",
+      "guestCountry": "CA",
+      "propertyID": "260351",
+      "thirdPartyIdentifier": "",
+      "estimatedArrivalTime": null,
+      "total": 0,
+      "balance": 0,
+      "dateImported": null,
+      "sourceName": "Walk-In",
+      "source": {
+        "name": "Walk-In",
+        "paymentCollect": "hotel",
+        "sourceID": "s-2"
+      },
+      "propertyCurrency": "CAD",
+      "balanceDetailed": {
+        "suggestedDeposit": "224.25",
+        "subTotal": 0,
+        "taxesFees": 0,
+        "additionalItems": 0,
+        "grandTotal": 0,
+        "paid": 0
+      },
+      "allotmentBlockCode": null,
+      "origin": "",
+      "detailedRates": {
+        "2026-02-17": 195
+      },
+      "rooms": [
+        {
+          "roomTypeID": "537928",
+          "roomTypeIsVirtual": false,
+          "roomTypeName": "Lodge Room with Shared Sauna",
+          "subReservationID": "1681706192837",
+          "guestID": "166023218",
+          "guestName": "Devin March",
+          "rateID": "1677952",
+          "rateName": "Lodge Room with Shared Sauna",
+          "adults": "1",
+          "children": "0",
+          "roomID": null,
+          "roomCheckIn": "2026-02-17",
+          "roomCheckOut": "2026-02-18",
+          "roomStatus": "canceled",
+          "detailedRoomRates": {
+            "2026-02-17": 195
+          },
+          "detailedRoomRateNames": [],
+          "marketName": "Retail",
+          "marketCode": "RTL"
+        }
+      ],
+      "guestList": [],
+      "mealPlans": ""
+    }
+  ],
+  "count": 1,
+  "total": 1
+}
